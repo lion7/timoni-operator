@@ -33,8 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	networkingv1 "k8s.io/api/networking/v1"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	corev1 "k8s.io/api/core/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -78,10 +77,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = networkingv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = gatewayv1.AddToScheme(scheme.Scheme)
+	err = corev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

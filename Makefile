@@ -91,6 +91,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
+	[ -f timoni_0.23.0_linux_amd64.tar.gz ] || wget https://github.com/stefanprodan/timoni/releases/download/v0.23.0/timoni_0.23.0_linux_amd64.tar.gz
 	$(CONTAINER_TOOL) build -t ${IMG} .
 
 .PHONY: docker-push

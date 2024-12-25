@@ -19,6 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"path"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,14 +53,40 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	secret := corev1.Secret{}
 	if err := r.Get(ctx, req.NamespacedName, &secret); err != nil {
 		if errors.IsNotFound(err) {
-			// TODO: delete bundle
+			// TODO: delete bundle?
 			return ctrl.Result{}, nil
 		}
 		logger.Error(err, fmt.Sprintf("cannot reconcile Secret %s", req.NamespacedName))
 		return ctrl.Result{}, err
 	}
 
-	// TODO: apply the bundle
+	if string(secret.Type) != "timoni.sh/bundle" {
+		return ctrl.Result{}, nil
+	}
+
+	tmpDir, err := os.MkdirTemp("", "timoni-operator")
+	if err != nil {
+		return ctrl.Result{}, nil
+	}
+	//goland:noinspection GoUnhandledErrorResult
+	defer os.RemoveAll(tmpDir)
+
+	files, err := writeSecretDataToTempDir(tmpDir, secret.Data)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	args := []string{"bundle", "apply"}
+	for _, file := range files {
+		args = append(args, "-f", file)
+	}
+	cmd := exec.Command("timoni", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -64,4 +95,19 @@ func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}).
 		Complete(r)
+}
+
+func writeSecretDataToTempDir(tmpDir string, data map[string][]byte) ([]string, error) {
+	var files []string
+	for name, bytes := range data {
+		if !strings.HasSuffix(name, ".cue") {
+			continue
+		}
+		file := path.Join(tmpDir, name)
+		if err := os.WriteFile(file, bytes, 0644); err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+	return files, nil
 }

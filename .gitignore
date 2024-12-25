@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+*.tar.gz
 bin/*
 Dockerfile.cross
 
