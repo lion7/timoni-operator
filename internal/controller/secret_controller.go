@@ -50,6 +50,10 @@ type SecretReconciler struct {
 func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	if req.Namespace != "kube-system" {
+		return ctrl.Result{}, nil
+	}
+
 	secret := corev1.Secret{}
 	if err := r.Get(ctx, req.NamespacedName, &secret); err != nil {
 		if errors.IsNotFound(err) {
